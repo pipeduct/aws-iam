@@ -1,0 +1,81 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+
+Description: Access to root account.
+
+
+Resources:
+   PolicyBillingRead:
+      Type: AWS::IAM::ManagedPolicy
+      Properties: {
+         Description: Allow to view bills.,
+         PolicyDocument: {
+            Version: 2012-10-17,
+            Statement: [
+               {
+                  Sid: billing,
+                  Action: [
+                     'aws-portal:ViewAccount',
+                     'aws-portal:ViewBilling',
+                     'aws-portal:ViewUsage',
+                  ],
+                  Resource: '*',
+                  Effect: Allow,
+               },
+            ],
+         },
+      }
+
+   PolicyMembers:
+      Type: AWS::IAM::ManagedPolicy
+      Properties: {
+         Description: Grant access to member accounts of the organization.,
+         PolicyDocument: {
+            Version: 2012-10-17,
+            Statement: [
+               {
+                  Sid: assume,
+                  Action: [
+                     'sts:AssumeRole',
+                  ],
+                  Resource: [
+                     {
+                        'Fn::Sub': 'arn:${AWS::Partition}:iam::*:role/OrganizationAccountAccessRole',
+                     },
+                  ],
+                  Effect: Allow,
+               },
+            ],
+         },
+      }
+
+   User:
+      Type: AWS::IAM::User
+      Properties: {
+         Path: /,
+         UserName: djsp,
+         ManagedPolicyArns: [
+            {
+               'Fn::Sub': 'arn:${AWS::Partition}:iam::aws:policy/AWSSupportAccess',
+            },
+            {
+               Ref: PolicyBillingRead,
+            },
+            {
+               'Fn::Sub': 'arn:${AWS::Partition}:iam::aws:policy/ReadOnlyAccess',
+            },
+            {
+               Ref: PolicyMembers,
+            },
+         ],
+         Policies: [
+         ],
+      }
+
+
+Outputs:
+   User:
+      Description: Name of the IAM user.
+      Value:
+         Ref: User
